@@ -27,17 +27,17 @@ uint8_t start_meas=0;
 //test string for testing the serial comm
 const char teststr[]="NNAABBCC\r\n";
 uint16_t sendbuf[8];
-uint8_t read_buf[7];
+uint16_t read_buf[8];
 
 //circular buffer for storing H field samples
 //#define CIRCULAR_BUFFER_SIZE 512
-//int16_t hz_buffer[CIRCULAR_BUFFER_SIZE];
+//int16_t bit5buffer[CIRCULAR_BUFFER_SIZE];
 
 struct akm_meas{
     int16_t Bx;
     int16_t By;
     int16_t Bz;
-    uint8_t status;
+    uint16_t status;
 };
 
 __interrupt void cpuTimer0ISR(void){
@@ -167,7 +167,6 @@ void sci_comm(void){
     SCI_performSoftwareReset(SCIA_BASE);
 }
 
-
 uint8_t i2c_write(uint8_t addr,const uint8_t* data,uint8_t count){
     //wait until the bus is not busy anymore (e.g. STOP condition has been sent)
     while(I2C_getStopConditionStatus(I2CA_BASE))
@@ -191,7 +190,7 @@ uint8_t i2c_write(uint8_t addr,const uint8_t* data,uint8_t count){
     return 0;
 }
 
-uint8_t i2c_read(uint8_t addr,uint8_t* data,uint8_t count){
+uint8_t i2c_read(uint8_t addr,uint16_t* data,uint8_t count){
     //wait until the bus is not busy anymore (e.g. STOP condition has been sent)
     while(I2C_getStopConditionStatus(I2CA_BASE))
         ;
@@ -219,15 +218,16 @@ uint8_t i2c_read(uint8_t addr,uint8_t* data,uint8_t count){
     //wait for the remaining bytes to be read into the RX FIFO
     while(I2C_getRxFIFOStatus(I2CA_BASE)!=remaining_bytes)
         ;
-    //copy the remaining bytes
-    //retreive the latest bit (e.g. the bit that was received most recently)
-    data[remaining_bytes-1]=I2C_getData(I2CA_BASE);
-    //copy the remaining received bits from the FIFO
-    for(i=0; i<remaining_bytes-1; i++)
-        data[bytes_read+i]=I2C_getData(I2CA_BASE);
-
+    I2C_RxFIFOLevel level=I2C_getRxFIFOStatus(I2CA_BASE);
     //send the stop condition
     I2C_sendStopCondition(I2CA_BASE);
+    //copy the remaining bytes
+    //retreive the latest bit (e.g. the bit that was received most recently)
+    //data[remaining_bytes-1]=I2C_getData(I2CA_BASE);
+    //copy the remaining received bits from the FIFO
+    for(i=0; i<remaining_bytes; i++)
+        data[bytes_read+i]=I2C_getData(I2CA_BASE);
+
     return 0;
 }
 
@@ -323,7 +323,7 @@ void main(void)
     i2c_write(0,WRITE_CONFIG_CNTL2,2);
     DEVICE_DELAY_US(2000000u);
 
-    /* read status register for debuggin purposes, not needed
+    /* read status register for debugging purposes, not needed
     uint8_t read_buf[6];
     //first, write the random address to be read to the sensor using a I2C write transaction
     const uint8_t WRITE_RAND_ADDR[]={ADDR_STATUS};
@@ -354,17 +354,16 @@ void main(void)
             //DEVICE_DELAY_US(100u);
 
             //read 7 bytes from the address
-            i2c_read(0,read_buf,7);
+            // for some reason, with the current `i2c_read` function, we need to read 8 bytes instead of 7. the first byte that is read seems to be random
+            i2c_read(0,read_buf,7+1);
 
             //parse magnetic data from sensor
-            parse_akm_meas(read_buf,&current_meas);
+            parse_akm_meas(read_buf+1,&current_meas);
 
             //serialize last measurement and send over UART
             serialize_akm(sendbuf,&current_meas);
             SCI_writeCharArray(SCIA_BASE,sendbuf,sizeof(sendbuf));
 
-            //store sensor data in circular buffer
-            //hz_buffer[loop_counter%CIRCULAR_BUFFER_SIZE]=current_meas.Bz;
 
             start_meas=0;
             loop_counter+=1;
