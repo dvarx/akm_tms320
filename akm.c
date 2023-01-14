@@ -61,7 +61,7 @@ void serialize_akm(uint16_t* dest, const struct akm_meas* meas){
 
 void init_i2c(void){
     I2C_disableModule(I2CA_BASE);
-    I2C_initMaster(I2CA_BASE, DEVICE_SYSCLK_FREQ, 400000, I2C_DUTYCYCLE_50);
+    I2C_initMaster(I2CA_BASE, DEVICE_SYSCLK_FREQ, 200000, I2C_DUTYCYCLE_50);
     I2C_setConfig(I2CA_BASE, I2C_MASTER_SEND_MODE);
     I2C_setSlaveAddress(I2CA_BASE, 0);
     I2C_disableLoopback(I2CA_BASE);
@@ -262,7 +262,8 @@ const uint8_t CNTL1_LOW_DRDY_EVENT_EN=0b00000001;
 // upper 8 bits are all zero for this register
 //----CNTL2 register (8bit)
 const uint8_t ADDR_CNTL2=0x21;
-const uint8_t CNTL2_MEASMODE6=0x0C;
+const uint8_t CNTL2_MEASMODE6=0x0C;     //500Hz continuous measurement mode
+const uint8_t CNTL2_SINGLEMEAS=0x01;    //single measurement mode
 //----additional addresses
 const uint8_t ADDR_STATUS=0x10;
 const uint8_t ADDR_STATUS_AND_FIELDS=0x17;
@@ -312,8 +313,10 @@ void main(void)
 
     //enable event on data ready (e.g. odint pulled low when data ready)
     const uint8_t WRITE_CONFIG_CNTL1[]={ADDR_CNTL1,CNTL1_LOW_DRDY_EVENT_EN,0x00};
-    //set measurement mode to MODE6 (e.g. automatic samplinga t 500Hz)
-    const uint8_t WRITE_CONFIG_CNTL2[]={ADDR_CNTL2,CNTL2_MEASMODE6};
+    //set measurement mode to MODE6 (e.g. single measurement mode)
+    const uint8_t WRITE_CONFIG_CNTL2[]={ADDR_CNTL2,CNTL2_SINGLEMEAS};
+    //write the address to be read to the sensor using I2C write command
+    const uint8_t WRITE_STATUS_AND_FIELDS_ADDR[]={ADDR_STATUS_AND_FIELDS};
 
     //initialize AKM sensor
     i2c_write(0,WRITE_CONFIG_CNTL1,3);
@@ -340,21 +343,25 @@ void main(void)
     uint16_t loop_counter=0;
     for(;;){
         if(start_meas){
-            //SCI_writeCharArray(SCIA_BASE,(uint16_t*)teststr,sizeof(teststr)/2); //test string for testing the serial comm
-
-            //serialize last measurement and send over UART
-            serialize_akm(sendbuf,&current_meas);
-            SCI_writeCharArray(SCIA_BASE,sendbuf,sizeof(sendbuf));
-
-            //write the address to be read to the sensor using I2C write command
-            const uint8_t WRITE_STATUS_AND_FIELDS_ADDR[]={ADDR_STATUS_AND_FIELDS};
+            //toggle the heartbeat pin
             GPIO_togglePin(HEARTBEAT_PIN);
+
+            //set the mode to single measurement mode via I2C, this triggers a new measurement
+            i2c_write(0,WRITE_CONFIG_CNTL2,2);
+            //DEVICE_DELAY_US(100u);
+
             i2c_write(0,WRITE_STATUS_AND_FIELDS_ADDR,1);
+            //DEVICE_DELAY_US(100u);
+
             //read 7 bytes from the address
             i2c_read(0,read_buf,7);
 
             //parse magnetic data from sensor
             parse_akm_meas(read_buf,&current_meas);
+
+            //serialize last measurement and send over UART
+            serialize_akm(sendbuf,&current_meas);
+            SCI_writeCharArray(SCIA_BASE,sendbuf,sizeof(sendbuf));
 
             //store sensor data in circular buffer
             //hz_buffer[loop_counter%CIRCULAR_BUFFER_SIZE]=current_meas.Bz;

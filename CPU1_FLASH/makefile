@@ -8,7 +8,7 @@ GEN_OPTS__FLAG :=
 GEN_CMDS__FLAG := 
 
 ORDERED_OBJS += \
-"./led_ex1_blinky.obj" \
+"./akm.obj" \
 "./device/F2837xD_CodeStartBranch.obj" \
 "./device/device.obj" \
 "../2837xD_FLASH_lnk_cpu1.cmd" \
@@ -143,7 +143,7 @@ all: $(OBJS) $(CMD_SRCS) $(LIB_SRCS) $(GEN_CMDS)
 tms320_akm.out: $(OBJS) $(CMD_SRCS) $(LIB_SRCS) $(GEN_CMDS)
 	@echo 'Building target: "$@"'
 	@echo 'Invoking: C2000 Linker'
-	"/home/dvarx/ti/ccs1120/ccs/tools/compiler/ti-cgt-c2000_21.6.0.LTS/bin/cl2000" -v28 -ml -mt --cla_support=cla1 --float_support=fpu32 --tmu_support=tmu0 --vcu_support=vcu2 -Ooff --define=CPU1 --define=_FLASH --diag_suppress=10063 --diag_warning=225 --diag_wrap=off --display_error_number --abi=eabi -z -m"tms320_akm.map" --stack_size=0x100 --warn_sections -i"/home/dvarx/ti/ccs1120/ccs/tools/compiler/ti-cgt-c2000_21.6.0.LTS/lib" -i"/home/dvarx/ti/ccs1120/ccs/tools/compiler/ti-cgt-c2000_21.6.0.LTS/include" --reread_libs --diag_wrap=off --display_error_number --xml_link_info="tms320_akm_linkInfo.xml" --entry_point=code_start --rom_model -o "tms320_akm.out" $(ORDERED_OBJS)
+	"/home/dvarx/ti/ccs1120/ccs/tools/compiler/ti-cgt-c2000_21.6.0.LTS/bin/cl2000" -v28 -ml -mt --cla_support=cla1 --float_support=fpu32 --tmu_support=tmu0 --vcu_support=vcu2 -Ooff --advice:performance=all --define=CPU1 --define=_FLASH --diag_suppress=10063 --diag_warning=225 --diag_wrap=off --display_error_number --abi=eabi -z -m"tms320_akm.map" --stack_size=0x1000 --warn_sections -i"/home/dvarx/ti/ccs1120/ccs/tools/compiler/ti-cgt-c2000_21.6.0.LTS/lib" -i"/home/dvarx/ti/ccs1120/ccs/tools/compiler/ti-cgt-c2000_21.6.0.LTS/include" --reread_libs --diag_wrap=off --display_error_number --xml_link_info="tms320_akm_linkInfo.xml" --entry_point=code_start --rom_model -o "tms320_akm.out" $(ORDERED_OBJS)
 	@echo 'Finished building target: "$@"'
 	@echo ' '
 
@@ -157,8 +157,8 @@ tms320_akm.hex: $(EXE_OUTPUTS)
 # Other Targets
 clean:
 	-$(RM) $(BIN_OUTPUTS__QUOTED)$(EXE_OUTPUTS__QUOTED)
-	-$(RM) "led_ex1_blinky.obj" "device/F2837xD_CodeStartBranch.obj" "device/device.obj" 
-	-$(RM) "led_ex1_blinky.d" "device/device.d" 
+	-$(RM) "akm.obj" "device/F2837xD_CodeStartBranch.obj" "device/device.obj" 
+	-$(RM) "akm.d" "device/device.d" 
 	-$(RM) "device/F2837xD_CodeStartBranch.d" 
 	-@echo 'Finished clean'
 	-@echo ' '

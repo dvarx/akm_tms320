@@ -10,21 +10,21 @@ LIB_SRCS += \
 /home/dvarx/ti/C2000Ware_3_04_00_00_Software/driverlib/f2837xd/driverlib/ccs/Debug/driverlib.lib 
 
 C_SRCS += \
-../led_ex1_blinky.c 
+../akm.c 
 
 C_DEPS += \
-./led_ex1_blinky.d 
+./akm.d 
 
 OBJS += \
-./led_ex1_blinky.obj 
+./akm.obj 
 
 OBJS__QUOTED += \
-"led_ex1_blinky.obj" 
+"akm.obj" 
 
 C_DEPS__QUOTED += \
-"led_ex1_blinky.d" 
+"akm.d" 
 
 C_SRCS__QUOTED += \
-"../led_ex1_blinky.c" 
+"../akm.c" 
 
 

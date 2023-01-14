@@ -1,1 +1,1 @@
-"./led_ex1_blinky.obj" "./device/F2837xD_CodeStartBranch.obj" "./device/device.obj" "../2837xD_FLASH_lnk_cpu1.cmd" "/home/dvarx/ti/C2000Ware_3_04_00_00_Software/driverlib/f2837xd/driverlib/ccs/Debug/driverlib.lib" -llibc.a 
+"./akm.obj" "./device/F2837xD_CodeStartBranch.obj" "./device/device.obj" "../2837xD_FLASH_lnk_cpu1.cmd" "/home/dvarx/ti/C2000Ware_3_04_00_00_Software/driverlib/f2837xd/driverlib/ccs/Debug/driverlib.lib" -llibc.a 
