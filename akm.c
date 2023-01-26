@@ -26,8 +26,9 @@
 uint8_t start_meas=0;
 //test string for testing the serial comm
 const char teststr[]="NNAABBCC\r\n";
-uint16_t sendbuf[8];
+uint16_t sendbuf[12];
 uint16_t read_buf[8];
+uint8_t is_sof=0;   //indicates whether the last read sample was a start of frame sample
 
 //circular buffer for storing H field samples
 //#define CIRCULAR_BUFFER_SIZE 512
@@ -47,16 +48,27 @@ __interrupt void cpuTimer0ISR(void){
 
 
 void serialize_akm(uint16_t* dest, const struct akm_meas* meas){
-    //first two bytes are for framing
-    dest[0]=0x0055;
-    dest[1]=0x0055;
+    //first two bytes is 0xFF for a regular sample and 0xAA for a SOF sample
+    if(is_sof){
+        dest[0]=0x00AA;
+        dest[1]=0x00AA;
+        dest[2]=0x00AA;
+    }
+    else{
+        dest[0]=0x00FF;
+        dest[1]=0x00FF;
+        dest[2]=0x00FF;
+    }
     //serialized measurements
-    dest[2]=(meas->Bx);
-    dest[3]=(meas->Bx)>>8;
-    dest[4]=(meas->By);
-    dest[5]=(meas->By)>>8;
-    dest[6]=(meas->Bz);
-    dest[7]=(meas->Bz)>>8;
+    dest[3]=(meas->Bx);
+    dest[4]=(meas->Bx)>>8;
+    dest[5]=0x00;
+    dest[6]=(meas->By);
+    dest[7]=(meas->By)>>8;
+    dest[8]=0x00;
+    dest[9]=(meas->Bz);
+    dest[10]=(meas->Bz)>>8;
+    dest[11]=0x00;
 }
 
 void init_i2c(void){
@@ -104,6 +116,11 @@ void gpio_init(void){
     GPIO_setPadConfig(HEARTBEAT_PIN, GPIO_PIN_TYPE_STD);
     GPIO_setMasterCore(HEARTBEAT_PIN, GPIO_CORE_CPU1);
     GPIO_setQualificationMode(HEARTBEAT_PIN, GPIO_QUAL_SYNC);
+    //start of frame SOF GPIO
+    GPIO_setDirectionMode(SOF_GPIO, GPIO_DIR_MODE_IN);
+    GPIO_setPadConfig(SOF_GPIO, GPIO_PIN_TYPE_STD);
+    GPIO_setMasterCore(SOF_GPIO, GPIO_CORE_CPU1);
+    GPIO_setQualificationMode(SOF_GPIO, GPIO_QUAL_SYNC);
 
     //W2BW_SUPPLY initialization
 //    GPIO_setDirectionMode(ODINT, GPIO_DIR_MODE_OUT);
@@ -356,6 +373,12 @@ void main(void)
             //read 7 bytes from the address
             // for some reason, with the current `i2c_read` function, we need to read 8 bytes instead of 7. the first byte that is read seems to be random
             i2c_read(0,read_buf,7+1);
+
+            //check whether the sample read was a start of frame sample
+            if(GPIO_readPin(SOF_GPIO))
+                is_sof=1;
+            else
+                is_sof=0;
 
             //parse magnetic data from sensor
             parse_akm_meas(read_buf+1,&current_meas);

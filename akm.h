@@ -9,6 +9,7 @@
 #define AKM_H_
 
 #define HEARTBEAT_PIN 0
+#define SOF_GPIO 123
 #define ODINT 1
 #define SDA_PIN 104
 #define SCL_PIN 105
